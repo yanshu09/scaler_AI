@@ -2,20 +2,25 @@ import os
 import docx
 from redactor import PIIRedactor
 
-def process_docx(input_path, output_path, redactor):
-    """Word document ke paragraphs aur tables read karke PII redact karega"""
+def process_docx(input_path: str, output_path: str, redactor: PIIRedactor):
+    """
+    Reads a .docx file, extracts text from paragraphs and tables, 
+    applies the PII redaction engine, and saves a new file 
+    while preserving original formatting.
+    """
     print(f"Loading document: {input_path}...")
     doc = docx.Document(input_path)
     
     print("Redacting normal paragraphs...")
-    # 1. Process regular paragraphs
+    # Step 1: Process regular body paragraphs
     for para in doc.paragraphs:
         if para.text.strip():
-            # Paragraph ka text replace kar rahe hain taaki recall high rahe
+            # Update paragraph text with redacted version
             para.text = redactor.redact_all(para.text)
             
     print("Redacting tables...")
-    # 2. Process tables
+    # Step 2: Traverse deeply into tables (Rows -> Cells -> Paragraphs)
+    # This ensures PII inside structured data (like Prospectus tables) is caught
     for table in doc.tables:
         for row in table.rows:
             for cell in row.cells:
@@ -28,14 +33,15 @@ def process_docx(input_path, output_path, redactor):
     print("Done! ✅")
 
 if __name__ == "__main__":
-    # Humara engine initialize karein
+    # Initialize our core redactor engine
     redactor = PIIRedactor()
     
-    # File paths (Make sure original file folder mein ho)
+    # Define file paths
     input_file = "Red Herring Prospectus.docx"
     output_file = "Redacted_Red_Herring_Prospectus.docx"
     
+    # Validation check to ensure file exists before processing
     if os.path.exists(input_file):
         process_docx(input_file, output_file, redactor)
     else:
-        print(f"Error: '{input_file}' was not found in the folder! Please copy the original file to this folder.")
+        print(f"Error: '{input_file}' not found in the current directory.")
